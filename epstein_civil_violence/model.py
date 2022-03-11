@@ -5,7 +5,7 @@ from mesa.datacollection import DataCollector
 import matplotlib
 from .agent import Cop, Citizen
 import random
-
+import csv
 
 class EpsteinCivilViolence(Model):
     """
@@ -66,7 +66,7 @@ class EpsteinCivilViolence(Model):
         self.iteration = 0
         self.schedule = RandomActivation(self)
         self.grid = Grid(width, height, torus=True)
-        self.pre_condition=pre_condition,
+        self.pre_condition = pre_condition,
         model_reporters = {
             "Quiescent": lambda m: self.count_type_citizens(m, "Quiescent"),
             "Active": lambda m: self.count_type_citizens(m, "Active"),
@@ -85,7 +85,8 @@ class EpsteinCivilViolence(Model):
         )
         unique_id = 0
         if self.cop_density + self.citizen_density > 1:
-            raise ValueError("Cop density + citizen density must be less than 1")
+            raise ValueError(
+                "Cop density + citizen density must be less than 1")
         for (contents, x, y) in self.grid.coord_iter():
             if self.random.random() < self.cop_density:
                 cop = Cop(unique_id, self, (x, y), vision=self.cop_vision)
@@ -118,9 +119,18 @@ class EpsteinCivilViolence(Model):
         self.schedule.step()
         # collect data
         self.datacollector.collect(self)
+        jailed = str(self.count_jailed(model=self))
+        active = str(self.count_type_citizens(model=self, condition='Active'))
+        with open('EpsteinCivilViolence.csv', 'a') as csvfile:
+            # writer object
+            csvwriter = csv.writer(csvfile)
+            # campos
+            csvwriter.writerow([jailed, active])
         self.iteration += 1
         if self.iteration > self.max_iters:
             self.running = False
+            # criando csv
+
 
     @staticmethod
     def count_type_citizens(model, condition, exclude_jailed=True):
